@@ -6,7 +6,7 @@ let maxResults = 500;
 let resultCounter;
 
 $(function () {
-    result = $.getJSON("./json/largeDevDirSet.json", function (data) {
+    result = $.getJSON("/json", function (data) {
         pack = data;
         rootFolder = pack.Root;
         currentFolder = rootFolder;
