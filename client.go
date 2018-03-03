@@ -10,12 +10,12 @@ import (
 	"github.com/labstack/gommon/log"
 	"strconv"
 	"encoding/json"
-	_"io/ioutil"
 	//"bufio"
 	"regexp"
 	"sync"
 	"net/http"
 	"bytes"
+	"io/ioutil"
 )
 
 var root Folder
@@ -24,7 +24,12 @@ var current *Folder
 var rootPath string
 var fileCount int
 var folderCount int
+var failedItems []FailItem
 
+type FailItem struct {
+	Path string
+	itemErr error
+}
 type File struct {
 	Name 		string
 	FullPath 	string
@@ -105,6 +110,10 @@ func visit(path string, f os.FileInfo, err error) error {
 	//fmt.Println(path)
 	path = strings.Replace(path, rootPath, root.Folders[rootIndex].FullPath, 1)
 	dir = strings.Replace(dir, rootPath, root.Folders[rootIndex].FullPath, 1)
+	if f == nil {
+		failedItems = append(failedItems, FailItem{Path: path, itemErr: err})
+		return err
+	}
 	if f.IsDir() {
 		if dir == "" {
 			_, name = filepath.Split(rootPath[:len(rootPath)-1])
@@ -220,7 +229,18 @@ func main() {
 		}
 		//req.Header.Set("Content-Type", "application/json")
 		fmt.Println("Post Sent")
-		//ioutil.WriteFile(".\\json\\data.json", jsonData, 0644)
+		if len(failedItems) > 0 {
+			finalFail, err := json.Marshal(failedItems)
+			if err != nil {
+				fmt.Println("error Encoding failed-items.json")
+				fmt.Println(err)
+			} else {
+				ioutil.WriteFile(".\\failed-items.json", finalFail, 0644)
+				fmt.Println("There are Failed items. Check failed-items.json for more information.")
+			}
+
+		}
+
 	}
 	elapsed := time.Now().Sub(startTime)
 	fmt.Print("\nScan Complete\n\nScanned " + strconv.Itoa(folderCount) + " Folders\nScanned " + strconv.Itoa(fileCount) + " Files\nTime Elapsed: ")
