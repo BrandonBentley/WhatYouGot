@@ -25,4 +25,4 @@ No I think I'm done here for today.
 
 If it **REALLY** sucks let me know.
 
-> **_Until Next Commit I bid you ado, yes I do._**
+> **_Until next commit I bid you ado, yes I do._**
