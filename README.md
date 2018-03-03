@@ -11,7 +11,7 @@ go build -o Client.exe client.go
 go build -o Server.exe server.go
 ```
 
-#Things To Know
+# Things To Know
 ..* Client takes 0-n file path arguments both relative and absolute 
     (Defaults to current directory if none is given to it)
 ..* Client does its thing, sends a POST to the server, and then promptly dies.
@@ -19,7 +19,7 @@ go build -o Server.exe server.go
 --* Server Serves on localhost:8080 
 --* Server must be in the parent folder of "site" and "json" folder to work
 
-#Anything Else?
+# Anything Else?
 No I think I'm done here for today.
 
 If it **REALLY** sucks let me know.
