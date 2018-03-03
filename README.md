@@ -1,5 +1,5 @@
 # What You Need To Build This
-All you need is the [GO compiler](https://golang.org/dl/)
+All you need is the official [GO compiler](https://golang.org/dl/)
 
 # How You Ask?
 To build all you need to do is: 
@@ -14,11 +14,9 @@ go build -o Server.exe server.go
 
 # Things To Know
 * Client takes 0-n file path arguments both relative and absolute 
-
-    (Defaults to current directory if none is given to it)
+        (Defaults to current directory if none is given to it)
 * Client does its thing, sends a POST to the server, and then promptly dies.
-
-    (this is by design... at least that's what I'm saying at this point)
+        (this is by design... at least that's what I'm saying at this point)
 * Server Serves on localhost:8080 
 * Server must be in the parent folder of "site" and "json" folder to work
 
