@@ -25,5 +25,4 @@ del buildInfo
 echo Build Complete
 
 cd .\builds 
-robocopy "C:\dev\FitnessTracker" ".\site" /s /e /is /it
 .\FullTest.bat
