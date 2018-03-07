@@ -23,6 +23,4 @@ go build -o Server.exe server.go
 # Anything Else?
 No I think I'm done here for today.
 
-If it **REALLY** sucks let me know.
-
 > **_Until next commit I bid you ado, yes I do._**
