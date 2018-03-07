@@ -1,27 +1,44 @@
 @echo off
 SETLOCAL
-IF EXIST ".\builds\Client.exe" (
-	del .\builds\Client.exe
+SET "failed="
+
+IF EXIST buildInfo (
+	del buildInfo
+)
+
+IF EXIST Client.exe (
+	del Client.exe
 	echo Removing Previous Client
 )
-IF EXIST ".\builds\Server.exe" (
-	del .\builds\Server.exe
-	echo Removing Previous Server
+IF NOT EXIST Client.exe (
+	go build -i -o Client.exe client.go >> buildInfo
+) ELSE (
+	echo Previous Client Removal Failed
 )
-
-go build -i -o .\builds\Client.exe client.go > buildInfo
-IF EXIST ".\builds\Client.exe" (
+IF EXIST Client.exe (
 	echo Build Successful: Client.exe
 ) ELSE (
+	SET "failed=true"
 	type buildInfo
 )
-go build -i -o .\builds\Server.exe server.go
-IF EXIST ".\builds\Server.exe" (
+
+IF EXIST Server.exe (
+	del Server.exe
+	echo Removing Previous Server
+)
+IF NOT EXIST Server.exe (
+	go build -i -o Server.exe server.go >> buildInfo
+) ELSE (
+	echo Previous Server Removal Failed
+)
+IF EXIST Server.exe (
 	echo Build Successful: Server.exe
 ) ELSE (
+	SET "failed=true"
 	type buildInfo
 )
-del buildInfo
-echo Build Complete
 
-start cmd .\builds
+IF NOT DEFINED failed (
+	del buildInfo
+)
+echo Build Complete

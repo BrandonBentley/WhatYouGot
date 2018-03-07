@@ -1,21 +1,22 @@
 package main
 
 import (
-	"path/filepath"
 	"fmt"
 	"os"
+	"path/filepath"
 	//"errors"
-	"time"
-	"strings"
-	"github.com/labstack/gommon/log"
-	"strconv"
 	"encoding/json"
+	"strconv"
+	"strings"
+	"time"
+
+	"github.com/labstack/gommon/log"
 	//"bufio"
-	"regexp"
-	"sync"
-	"net/http"
 	"bytes"
 	"io/ioutil"
+	"net/http"
+	"regexp"
+	"sync"
 )
 
 var root Folder
@@ -27,25 +28,25 @@ var folderCount int
 var failedItems []FailItem
 
 type FailItem struct {
-	Path string
+	Path    string
 	itemErr error
 }
 type File struct {
-	Name 		string
-	FullPath 	string
+	Name     string
+	FullPath string
 }
 
 type Folder struct {
-	Name 		string
-	FullPath 	string
-	Files 		[]File
-	Folders 	[]Folder
+	Name     string
+	FullPath string
+	Files    []File
+	Folders  []Folder
 }
 
 type OverHeadPackage struct {
-	FileCount	int
-	FolderCount	int
-	Root		Folder
+	FileCount   int
+	FolderCount int
+	Root        Folder
 }
 
 func (f *Folder) AddFile(name string, path string) {
@@ -65,20 +66,20 @@ func (f *Folder) FindSubFolderRecursive(path string) (*Folder, error) {
 	paths = append(paths[:0], paths[1:]...)
 	for _, s := range paths {
 		//fmt.Println("searching " + s)
-			tempFolder := folder.FindSubFolder(s)
-			if tempFolder != nil {
-				folder = tempFolder
-			}
+		tempFolder := folder.FindSubFolder(s)
+		if tempFolder != nil {
+			folder = tempFolder
+		}
 	}
 	//fmt.Println("\t\t" + strconv.FormatBool(folder == nil))
 	return folder, nil
 }
 
-func (f *Folder) FindSubFolder(folderName string) (*Folder) {
+func (f *Folder) FindSubFolder(folderName string) *Folder {
 	found := false
 	//fmt.Println("looking for: " + folderName)
 	//fmt.Print("Contains: ")
-	for i := 0; i<len(f.Folders); i++ {
+	for i := 0; i < len(f.Folders); i++ {
 		//fmt.Print(f.Folders[i].Name + " ")
 		if f.Folders[i].Name == folderName {
 			//fmt.Println("\nfound: " + folderName)
@@ -95,7 +96,7 @@ func (f *Folder) FindSubFolder(folderName string) (*Folder) {
 
 func CreateFolder(name string, path string) Folder {
 	folderCount++
-	return Folder{Name: name, FullPath: path + "\\", Files: make([]File, 0), Folders: make ([]Folder, 0)}
+	return Folder{Name: name, FullPath: path + "\\", Files: make([]File, 0), Folders: make([]Folder, 0)}
 }
 
 func CreateFile(name string, path string) File {
@@ -103,13 +104,13 @@ func CreateFile(name string, path string) File {
 	return File{Name: name, FullPath: path}
 }
 
-
-
 func visit(path string, f os.FileInfo, err error) error {
 	dir, name := filepath.Split(path)
 	//fmt.Println(path)
+	//Comment out next line for full file paths
 	path = strings.Replace(path, rootPath, root.Folders[rootIndex].FullPath, 1)
 	dir = strings.Replace(dir, rootPath, root.Folders[rootIndex].FullPath, 1)
+
 	if f == nil {
 		failedItems = append(failedItems, FailItem{Path: path, itemErr: err})
 		return err
@@ -153,6 +154,14 @@ func initializeCounts() {
 	folderCount = 0
 }
 
+func progressOutput(totalFolders int, totalFiles int, running *bool, outputWG *sync.WaitGroup) {
+	for *running {
+		fmt.Printf("\rFolders Scanned: %-13d  Files Scanned: %-13d", folderCount-totalFolders, fileCount-totalFiles)
+		time.Sleep(1000000000)
+	}
+	outputWG.Done()
+}
+
 func main() {
 	args := os.Args
 	if len(args) <= 1 {
@@ -170,6 +179,7 @@ func main() {
 	rootIndex = 0
 	r, _ := regexp.Compile("\\$")
 	var wg sync.WaitGroup
+	var outputWG sync.WaitGroup
 	for i, arg := range args {
 		if !r.Match([]byte(arg)) {
 			rootPath = arg + "\\"
@@ -182,14 +192,23 @@ func main() {
 		if err != nil {
 			fmt.Println("Directory " + rootPath + " Not found. Skipping")
 		} else {
-			fmt.Print("Scan Path: " + rootPath)
+			fmt.Println("Scan Path: " + rootPath)
 			wg.Add(1)
-			go func () {
+			outputWG.Add(1)
+			running := true
+			if i > 0 {
+				go progressOutput(inFolders[i-1], inFiles[i-1], &running, &outputWG)
+			} else {
+				go progressOutput(0, 0, &running, &outputWG)
+			}
+
+			go func() {
 				filepath.Walk(rootPath, visit)
 				wg.Done()
 			}()
-
 			wg.Wait()
+			running = false
+			outputWG.Wait()
 			if i > 0 {
 				inFolders[i] = folderCount - inFolders[i-1]
 				inFiles[i] = fileCount - inFiles[i-1]
@@ -197,11 +216,12 @@ func main() {
 				inFolders[i] = folderCount
 				inFiles[i] = fileCount
 			}
-			fmt.Println(" - Completed")
+			fmt.Printf("\r%100s", "")
+			fmt.Printf("\r - Completed\n")
 		}
 	}
 
-	fmt.Printf("RESULTS\n========================================\n" +
+	fmt.Printf("\nRESULTS\n========================================\n"+
 		"%-15s|%-10s|%-10s|\n", " Directory", " Folders", " Files")
 	for i, fold := range root.Folders {
 		fmt.Printf("  %-13s|  %-8d|  %-8d|\n", fold.Name, inFolders[i], inFiles[i])
@@ -225,10 +245,11 @@ func main() {
 		url := "http://localhost:8080/post"
 		_, err := http.Post(url, "application/json; charset=utf-8", bytes.NewBuffer(jsonData))
 		if err != nil {
+			fmt.Println("")
 			fmt.Println(err)
 		}
 		//req.Header.Set("Content-Type", "application/json")
-		fmt.Println("Post Sent")
+
 		if len(failedItems) > 0 {
 			finalFail, err := json.Marshal(failedItems)
 			if err != nil {
@@ -245,8 +266,6 @@ func main() {
 	elapsed := time.Now().Sub(startTime)
 	fmt.Print("\nScan Complete\n\nScanned " + strconv.Itoa(folderCount) + " Folders\nScanned " + strconv.Itoa(fileCount) + " Files\nTime Elapsed: ")
 	fmt.Print(elapsed.Seconds())
-	fmt.Println(" Seconds")
+	fmt.Println(" Seconds\n")
 	//bufio.NewReader(os.Stdin).ReadBytes('\n')
 }
-
-
