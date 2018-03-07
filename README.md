@@ -5,7 +5,7 @@ All you need is the official [GO compiler](https://golang.org/dl/)
 To build all you need to do is: 
 * Have the above compiler installed and configured env properly
 * If you are are Windows you can run build.bat to build ( Hey it works ¯\\_(ツ)_/¯ )
-* If not just run the following with the extension you want:
+* Build commands are simply:
 
 ```bash
 go build -o Client.exe client.go
